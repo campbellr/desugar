@@ -143,8 +143,26 @@ class SourceGenerator(NodeVisitor):
             self.write('@')
             self.visit(decorator)
 
+    def docstring(self, node):
+        self.write('"""')
+        self.write(node.s)
+        self.write('"""')
+
+    # This is just a hack, there is no real Docstring node
+    def visit_DocStr(self, node):
+        self.docstring(node)
+
+    def transform_docstring(self, node):
+        class DocStr(Str):
+            pass
+
+        if get_docstring(node):
+            s = node.body[0].value.s
+            node.body = [Expr(value=DocStr(s=s))] + node.body[1:]
+
     # Module
     def visit_Module(self, node):
+        self.transform_docstring(node)
         NodeVisitor.generic_visit(self, node)
         self.write('\n')
 
@@ -190,6 +208,7 @@ class SourceGenerator(NodeVisitor):
         self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
+        self.transform_docstring(node)
         self.newline(extra=1)
         self.decorators(node)
         self.newline(node)
@@ -199,6 +218,7 @@ class SourceGenerator(NodeVisitor):
         self.body(node.body)
 
     def visit_ClassDef(self, node):
+        self.transform_docstring(node)
         have_args = []
         def paren_or_comma():
             if have_args:
