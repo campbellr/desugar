@@ -1,4 +1,6 @@
-""" A script that converts new-style decorator syntax to old-style.
+"""usage: %prog [-i] FILE
+
+Convert new-style decorator syntax to old-style.
 
 NOTE: this script also destroys any formatting (and comments) that the module may have.
 
@@ -6,6 +8,7 @@ NOTE: this script also destroys any formatting (and comments) that the module ma
 import os
 import sys
 import ast
+import optparse
 
 import codegen
 
@@ -34,21 +37,47 @@ class RewriteDecorator(ast.NodeTransformer):
         ]
 
 
+def parse_args(args):
+    parser = optparse.OptionParser(usage=__doc__)
+    parser.add_option(
+        '-i', '--in-place', action='store_true', dest='inplace', default=False,
+        help='Edit file in place.')
+
+    opts, pargs = parser.parse_args(args)
+
+    if len(pargs) != 1:
+        parser.error("Unexpected argument count.")
+
+    path = pargs[0]
+    if not os.path.isfile(path):
+        parser.error("No such file %r" % path)
+
+    return opts, path
+
+
 def main(args):
-    assert len(args) == 1
-    filepath = args[0]
+    opts, filepath = parse_args(args)
+
     filename = os.path.basename(filepath)
     with open(filepath) as f:
         source = f.read()
         module = ast.parse(source, filename)
 
     RewriteDecorator().visit(module)
-    print codegen.to_source(module)
+    transformed = codegen.to_source(module)
+
+    if opts.inplace:
+        with open(filepath, 'w') as f:
+            f.write(transformed)
+    else:
+        print transformed
 
 
 if __name__ == '__main__':
     try:
         main(sys.argv[1:])
+    except (SystemExit, KeyboardInterrupt):
+        pass
     except:
         import traceback
         traceback.print_exc()
