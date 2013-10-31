@@ -33,3 +33,23 @@ Will be converted to this:
             return self._x
         x = property(x)
 
+
+Usage
+-----
+
+Simply run:
+
+.. code-block:: bash
+
+    $ python desugar.py <source file>
+
+The translated source will be written to stdout.
+
+
+Caveats
+-------
+
+* Formatting is lost in the translation from source to AST
+* The same goes for any comments in the module
+* We don't support functions with multiple decorators yet
+
