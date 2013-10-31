@@ -7,7 +7,9 @@ def deco(f):
         return r
     return wrapped
 
+# this comment will disappear
+
 
 @deco
 def add(a, b):
-    return a + b
+    return a + b  # so will this one

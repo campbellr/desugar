@@ -1,26 +1,49 @@
 """ A script that converts new-style decorator syntax to old-style.
 
-eg:
+NOTE: this script also destroys any formatting (and comments) that the module may have.
 
 """
+import os
 import sys
 import ast
+
+import codegen
+
 
 class RewriteDecorator(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node):
-        print node
         if not node.decorator_list:
             return node
-        print dir(node)
-        print node._fields
-        super(RewriteDecorator, self).generic_visit(node)
+        decorator_list = node.decorator_list
+        node.decorator_list = []
+        # TODO: enhance to support multiple decorators
+        assert len(decorator_list) == 1, 'Multiple decorators unsupported!'
+        decorator = decorator_list[0]
+        return [
+            node,
+            ast.Assign(
+                targets=[ast.Name(id=node.name, ctx=ast.Store())],
+                value=ast.Call(
+                    func=decorator,
+                    args=[ast.Name(id=node.name, ctxt=ast.Load())],
+                    keywords=[],
+                    starargs=None,
+                    kwargs=None)
+            )
+        ]
+
 
 def main(args):
     assert len(args) == 1
-    filename = args[0]
-    module = ast.parse(open(filename).read())
-    transformed = RewriteDecorator().visit(module)
+    filepath = args[0]
+    filename = os.path.basename(filepath)
+    with open(filepath) as f:
+        source = f.read()
+        module = ast.parse(source, filename)
+
+    RewriteDecorator().visit(module)
+    print codegen.to_source(module)
 
 
 if __name__ == '__main__':
