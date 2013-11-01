@@ -45,11 +45,12 @@ Simply run:
 
 The translated source will be written to stdout.
 
+``desugar`` also has an ``--in-place`` option that, when used, overwrites the
+source file instead of just writing to stdout.
 
 Caveats
 -------
 
 * Formatting is lost in the translation from source to AST
-* The same goes for any comments in the module
-* We don't support functions with multiple decorators yet
+  (The same goes for any comments in the module)
 
