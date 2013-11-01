@@ -19,21 +19,22 @@ class RewriteDecorator(ast.NodeTransformer):
         if not node.decorator_list:
             return node
 
-        def assign(deco_node):
-            return ast.Assign(
-                targets=[ast.Name(id=node.name, ctx=ast.Store())],
-                value=ast.Call(
-                    func=deco_node,
-                    args=[ast.Name(id=node.name, ctxt=ast.Load())],
-                    keywords=[],
-                    starargs=None,
-                    kwargs=None)
-            )
-
-        decorator_list = node.decorator_list
-        assignments = reversed([assign(d) for d in decorator_list])
+        decorator_list = reversed(node.decorator_list)
         node.decorator_list = []
-        return [node] + list(assignments)
+        args = [ast.Name(id=node.name, ctxt=ast.Load())]
+        for deco in decorator_list:
+            call = ast.Call(
+                func=deco,
+                args=args,
+                keywords=[],
+                starargs=None,
+                kwargs=None)
+            args = [call]
+
+        assignment = ast.Assign(
+            targets=[ast.Name(id=node.name, ctx=ast.Store())],
+            value=call)
+        return [node, assignment]
 
 
 def parse_args(args):
