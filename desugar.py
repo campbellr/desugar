@@ -18,23 +18,22 @@ class RewriteDecorator(ast.NodeTransformer):
     def visit_FunctionDef(self, node):
         if not node.decorator_list:
             return node
-        decorator_list = node.decorator_list
-        node.decorator_list = []
-        # TODO: enhance to support multiple decorators
-        assert len(decorator_list) == 1, 'Multiple decorators unsupported!'
-        decorator = decorator_list[0]
-        return [
-            node,
-            ast.Assign(
+
+        def assign(deco_node):
+            return ast.Assign(
                 targets=[ast.Name(id=node.name, ctx=ast.Store())],
                 value=ast.Call(
-                    func=decorator,
+                    func=deco_node,
                     args=[ast.Name(id=node.name, ctxt=ast.Load())],
                     keywords=[],
                     starargs=None,
                     kwargs=None)
             )
-        ]
+
+        decorator_list = node.decorator_list
+        assignments = reversed([assign(d) for d in decorator_list])
+        node.decorator_list = []
+        return [node] + list(assignments)
 
 
 def parse_args(args):
